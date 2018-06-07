@@ -17,6 +17,7 @@ dtb-y += axg_s420_v03.dtb
 dtb-y += axg_s420_v03gva.dtb
 dtb-y += common_overlay_dt.dtb
 dtb-y += g12a_pxp.dtb
+dtb-y += g12a_s905d2_odroidc3.dtb
 dtb-y += g12a_s905d2_skt.dtb
 dtb-y += g12a_s905d2_skt_buildroot.dtb
 dtb-y += g12a_s905d2_u200.dtb

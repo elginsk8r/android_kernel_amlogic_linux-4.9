@@ -59,6 +59,7 @@ dtb-y += g12b_a311x_w411_buildroot_a.dtb
 dtb-y += g12b_pxp.dtb
 dtb-y += g12b_pxp_a.dtb
 dtb-y += g12b_revb_a311d_w400_drm_buildroot.dtb
+dtb-y += g12b_s922d_odroidn2.dtb
 dtb-y += gxl_p212_1g.dtb
 dtb-y += gxl_p212_1g_buildroot.dtb
 dtb-y += gxl_p212_1g_hd.dtb

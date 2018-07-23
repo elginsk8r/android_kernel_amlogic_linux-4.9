@@ -15081,3 +15081,8 @@ F:	arch/arm64/boot/dts/amlogic/mesonsm1_drm.dtsi
 F:	arch/arm/boot/dts/amlogic/sm1_s905d3_ac200_drm_buildroot.dts
 F:	arch/arm64/boot/dts/amlogic/sm1_s905d3_ac200_drm_buildroot.dts
 F:	drivers/amlogic/drm/meson_vpu.c
+
+HARDKERNEL S922D odroidn2
+M: 	Joy Cho <joy.cho@hardkernel.com>
+F:	arch/arm64/configs/odroidn2_defconfig
+F:      arch/arm64/boot/dts/amlogic/s922d_odroidn2.dts

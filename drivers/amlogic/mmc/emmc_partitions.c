@@ -26,6 +26,7 @@
 #include <linux/scatterlist.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
+#include <linux/of.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 #include <linux/mmc/emmc_partitions.h>
@@ -850,24 +851,27 @@ int get_reserve_partition_off(struct mmc_card *card) /* byte unit */
 	int off = -1, storage_flag;
 	struct mmc_host *mmc_host = card->host;
 	struct amlsd_host *host = mmc_priv(mmc_host);
+	struct device_node *of_node = mmc_host->parent->of_node;
 
 	storage_flag = host->storage_flag;
-	if (!strcmp(mmc_hostname(mmc_host), "emmc"))
-		storage_flag = EMMC_BOOT_FLAG;
-	if ((storage_flag == EMMC_BOOT_FLAG)
-			|| (storage_flag == SPI_EMMC_FLAG))	{
-		off = MMC_BOOT_PARTITION_SIZE + MMC_BOOT_PARTITION_RESERVED;
-	} else if ((storage_flag == 0) || (storage_flag == -1)) {
-		if (POR_EMMC_BOOT()) {
-			off = MMC_BOOT_PARTITION_SIZE
-				+ MMC_BOOT_PARTITION_RESERVED;
-		} else if (POR_SPI_BOOT() || POR_CARD_BOOT()) {
-			off = 0;
-		} else { /* POR_NAND_BOOT */
+	if (!of_property_read_u32(of_node, "aml,partition-table-offset", &off)) {
+		if (!strcmp(mmc_hostname(mmc_host), "emmc"))
+			storage_flag = EMMC_BOOT_FLAG;
+		if ((storage_flag == EMMC_BOOT_FLAG)
+				|| (storage_flag == SPI_EMMC_FLAG))	{
+			off = MMC_BOOT_PARTITION_SIZE + MMC_BOOT_PARTITION_RESERVED;
+		} else if ((storage_flag == 0) || (storage_flag == -1)) {
+			if (POR_EMMC_BOOT()) {
+				off = MMC_BOOT_PARTITION_SIZE
+					+ MMC_BOOT_PARTITION_RESERVED;
+			} else if (POR_SPI_BOOT() || POR_CARD_BOOT()) {
+				off = 0;
+			} else { /* POR_NAND_BOOT */
+				off = -1;
+			}
+		} else { /* error, the storage device does NOT relate to eMMC */
 			off = -1;
 		}
-	} else { /* error, the storage device does NOT relate to eMMC */
-		off = -1;
 	}
 
 	if (off == -1)
@@ -1126,8 +1130,8 @@ static const struct file_operations card_proc_fops = {
 	.release = single_release,
 };
 
-static int add_emmc_partition(struct gendisk *disk,
-		struct mmc_partitions_fmt *pt_fmt)
+static int add_emmc_partition(struct mmc_card *card,
+		struct gendisk *disk, struct mmc_partitions_fmt *pt_fmt)
 {
 	unsigned int i;
 	struct hd_struct *ret = NULL;
@@ -1136,22 +1140,35 @@ static int add_emmc_partition(struct gendisk *disk,
 	struct proc_dir_entry *proc_card;
 	struct disk_part_iter piter;
 	struct hd_struct *part;
+	struct device_node *of_node = card->host->parent->of_node;
+	int shift;
 
 	pr_info("add_emmc_partition\n");
+
+	if (!of_property_read_u32(of_node, "aml,partition-shift", &shift)) {
+		shift = 9;
+	} else {
+		pr_info("%s: partition shift: %d\n", __func__, shift);
+	}
 
 	cap = get_capacity(disk); /* unit:512 bytes */
 	for (i = 0; i < pt_fmt->part_num; i++) {
 		pp = &(pt_fmt->partitions[i]);
-		offset = pp->offset >> 9; /* unit:512 bytes */
-		size = pp->size >> 9; /* unit:512 bytes */
+		/* Check if the partition is hidden */
+		if (pp->name[0] == '@') {
+			continue;
+		}
+
+		offset = pp->offset >> shift; /* unit:512 bytes */
+		size = pp->size >> shift; /* unit:512 bytes */
 		if ((offset + size) <= cap) {
 			ret = add_emmc_each_part(disk, 1+i, offset,
 					size, 0, pp->name);
 
 			pr_debug("[%sp%02d] %20s  offset 0x%012llx, size 0x%012llx %s\n",
 				 disk->disk_name, 1 + i,
-				 pp->name, offset << 9,
-				 size << 9, IS_ERR(ret) ? "add fail" : "");
+				 pp->name, offset << shift,
+				 size << shift, IS_ERR(ret) ? "add fail" : "");
 			if (IS_ERR(ret))
 				return -1;
 		} else {
@@ -1159,7 +1176,7 @@ static int add_emmc_partition(struct gendisk *disk,
 					__func__, disk->disk_name);
 
 			pr_info("%20s	offset 0x%012llx, size 0x%012llx\n",
-					pp->name, offset<<9, size<<9);
+					pp->name, offset<<shift, size<<shift);
 
 			break;
 		}
@@ -1187,6 +1204,10 @@ static int add_emmc_partition(struct gendisk *disk,
 static int is_card_emmc(struct mmc_card *card)
 {
 	struct mmc_host *mmc = card->host;
+	struct device_node *of_node = mmc->parent->of_node;
+
+	if (of_property_read_bool(of_node,"aml,skip-emmc-check"))
+		return 1;
 
 	/* emmc port, so it must be an eMMC or TSD */
 	if (!strcmp(mmc_hostname(mmc), "emmc"))
@@ -1429,7 +1450,7 @@ int aml_emmc_partition_ops(struct mmc_card *card, struct gendisk *disk)
 
 	ret = mmc_read_partition_tbl(card, pt_fmt);
 	if (ret == 0) { /* ok */
-		ret = add_emmc_partition(disk, pt_fmt);
+		ret = add_emmc_partition(card, disk, pt_fmt);
 	}
 	mmc_release_host(card->host);
 

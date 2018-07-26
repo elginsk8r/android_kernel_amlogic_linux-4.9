@@ -36,6 +36,7 @@
 #include <linux/compat.h>
 #include <linux/pm_runtime.h>
 #include <linux/idr.h>
+#include <linux/of.h>
 
 #include <linux/mmc/ioctl.h>
 #include <linux/mmc/card.h>
@@ -3017,6 +3018,57 @@ static const struct mmc_fixup blk_fixups[] =
 	END_FIXUP
 };
 
+static int mmc_validate_mpt_partition(struct mmc_card *card)
+{
+	struct mmc_host *mmc = card->host;
+	struct device_node *of_node = mmc->parent->of_node;
+	char *buf;
+	int ret;
+	int off = -1;
+
+	if (!of_property_read_bool(of_node,"aml,skip-emmc-check")) {
+		/* check only if 'card' is eMMC device */
+		if (strcmp(mmc_hostname(card->host), "emmc"))
+			return -EINVAL;
+	}
+
+	buf = (char*)kmalloc(1 << card->csd.read_blkbits, GFP_KERNEL);
+	if (buf == NULL)
+		return -ENOMEM;
+
+	mmc_claim_host(card->host);
+
+	if (!of_property_read_u32(of_node, "aml,partition-table-offset", &off))
+		return -EINVAL;
+
+	ret = mmc_read_internal(card, off, 1, buf);
+	if (ret == 0) {
+		if (strncmp(buf, MMC_PARTITIONS_MAGIC,
+			sizeof(((struct mmc_partitions_fmt*)0)->magic)) != 0) {
+			ret = -EINVAL;
+		}
+	}
+
+	mmc_release_host(card->host);
+
+	kfree(buf);
+	return ret;
+}
+
+static bool mmc_is_ignore_mpt(struct mmc_host *host)
+{
+	bool ignore = false;
+	struct device_node *of_node = host->parent->of_node;
+	struct device_node *child;
+
+	for_each_child_of_node(of_node, child) {
+		if (of_property_read_bool(child, "ignore_mpt"))
+			ignore = true;
+	}
+
+	return ignore;
+}
+
 static int mmc_blk_probe(struct mmc_card *card)
 {
 	struct mmc_blk_data *md, *part_md;
@@ -3052,8 +3104,11 @@ static int mmc_blk_probe(struct mmc_card *card)
 		goto out;
 
 #ifdef CONFIG_AMLOGIC_MMC
-	/* amlogic add emmc partitions ops */
-	aml_emmc_partition_ops(card, md->disk);
+	if (mmc_validate_mpt_partition(card) == 0 &&
+			!mmc_is_ignore_mpt(card->host)) {
+		/* amlogic add emmc partitions ops */
+		aml_emmc_partition_ops(card, md->disk);
+	}
 #endif
 
 	list_for_each_entry(part_md, &md->part, part) {

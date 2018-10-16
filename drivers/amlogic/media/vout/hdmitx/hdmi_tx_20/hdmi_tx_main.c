@@ -5579,12 +5579,24 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	hdmitx_get_edid(hdev);
 	hdev->cedst_policy = hdev->cedst_en & hdev->rxcap.scdc_present;
 	hdmi_physical_size_update(hdev);
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	if (odroid_voutmode() == VOUTMODE_HDMI) {
+		pr_info(VID "Sink is HDMI device\n");
+		hdev->hwop.cntlconfig(hdev,
+			CONF_HDMI_DVI_MODE, HDMI_MODE);
+	} else if (odroid_voutmode() == VOUTMODE_DVI) {
+		pr_info(VID "Sink is DVI device\n");
+		hdev->hwop.cntlconfig(hdev,
+			CONF_HDMI_DVI_MODE, DVI_MODE);
+	} else
+#endif
 	if (hdev->rxcap.ieeeoui != HDMI_IEEEOUI)
 		hdev->hwop.cntlconfig(hdev,
 			CONF_HDMI_DVI_MODE, DVI_MODE);
 	else
 		hdev->hwop.cntlconfig(hdev,
 			CONF_HDMI_DVI_MODE, HDMI_MODE);
+
 	mutex_lock(&getedid_mutex);
 	if (hdev->chip_type < MESON_CPU_ID_G12A)
 		hdev->hwop.cntlmisc(hdev, MISC_I2C_REACTIVE, 0);

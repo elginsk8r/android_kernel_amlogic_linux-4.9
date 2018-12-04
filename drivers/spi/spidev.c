@@ -699,6 +699,9 @@ static struct class *spidev_class;
 static const struct of_device_id spidev_dt_ids[] = {
 	{ .compatible = "rohm,dh2228fv" },
 	{ .compatible = "lineartechnology,ltc2488" },
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	{ .compatible = "linux,spidev" },
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, spidev_dt_ids);
@@ -815,6 +818,12 @@ static int spidev_remove(struct spi_device *spi)
 	spin_lock_irq(&spidev->spi_lock);
 	spidev->spi = NULL;
 	spin_unlock_irq(&spidev->spi_lock);
+
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	/* gpio free for spidev */
+	if(spi->master->cleanup)
+		spi->master->cleanup(spi);
+#endif
 
 	list_del(&spidev->device_entry);
 	device_destroy(spidev_class, spidev->devt);

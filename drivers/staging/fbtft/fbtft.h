@@ -242,7 +242,17 @@ struct fbtft_par {
 	bool bgr;
 	void *extra;
 	bool polarity;
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	void __iomem *reg_gpiox;
+#endif
 };
+
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	#define	ODROIDN2_GPIO_START	0xff634400
+	#define	ODROIDN2_GPIOX_START	(ODROIDN2_GPIO_START + 0x50)
+	#define	OFFSET_GPIOX_OUT	0x0C
+	#define	OFFSET_GPIOX_IN		0x10
+#endif
 
 #define NUMARGS(...)  (sizeof((int[]){__VA_ARGS__})/sizeof(int))
 
@@ -272,6 +282,10 @@ int fbtft_read_spi(struct fbtft_par *par, void *buf, size_t len);
 int fbtft_write_gpio8_wr(struct fbtft_par *par, void *buf, size_t len);
 int fbtft_write_gpio16_wr(struct fbtft_par *par, void *buf, size_t len);
 int fbtft_write_gpio16_wr_latched(struct fbtft_par *par, void *buf, size_t len);
+
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+int fbtft_write_reg_wr(struct fbtft_par *par, void *buf, size_t len);
+#endif
 
 /* fbtft-bus.c */
 int fbtft_write_vmem8_bus8(struct fbtft_par *par, size_t offset, size_t len);

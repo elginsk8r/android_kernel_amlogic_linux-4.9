@@ -140,6 +140,9 @@ struct meson_pwm {
 #endif
 	spinlock_t pwm_lock;
 	unsigned int clk_mask;
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	struct pinctrl *p_pinctrl;
+#endif
 };
 
 struct meson_pwm_channel {

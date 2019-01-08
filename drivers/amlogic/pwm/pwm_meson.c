@@ -61,6 +61,10 @@
 #include <linux/amlogic/pwm_meson.h>
 #include <linux/of_device.h>
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+#include <linux/pinctrl/consumer.h>
+#endif
+
 struct meson_pwm *to_meson_pwm(struct pwm_chip *chip)
 {
 	return container_of(chip, struct meson_pwm, chip);
@@ -113,6 +117,9 @@ static int meson_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 	struct meson_pwm_channel *channel = pwm_get_chip_data(pwm);
 	struct device *dev = chip->dev;
 	int err;
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	struct meson_pwm *meson = to_meson_pwm(chip);
+#endif
 
 	if (!channel)
 		return -ENODEV;
@@ -137,6 +144,13 @@ static int meson_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
 	channel->clkin_rate = clk_get_rate(channel->clk);
 	chip->ops->get_state(chip, pwm, &channel->state);
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	meson->p_pinctrl = devm_pinctrl_get_select(dev, "pwm_pins");
+	if (IS_ERR(meson->p_pinctrl)) {
+		meson->p_pinctrl = NULL;
+		dev_err(dev, "pwm pinmux : can't get pinctrl\n");
+	}
+#endif
 	return 0;
 }
 
@@ -144,6 +158,16 @@ static void meson_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
 {
 	struct meson_pwm_channel *channel = pwm_get_chip_data(pwm);
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	struct meson_pwm *meson = to_meson_pwm(chip);
+	struct device *dev = chip->dev;
+
+	if (meson->p_pinctrl)
+		devm_pinctrl_put(meson->p_pinctrl);
+	meson->p_pinctrl = devm_pinctrl_get_select(dev, "gpio_periphs");
+	devm_pinctrl_put(meson->p_pinctrl);
+	meson->p_pinctrl = NULL;
+#endif
 	if (channel)
 		clk_disable_unprepare(channel->clk);
 }
@@ -686,6 +710,9 @@ static int meson_pwm_probe(struct platform_device *pdev)
 		meson->chip.npwm = 2;
 	meson->inverter_mask = BIT(meson->chip.npwm) - 1;
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	meson->p_pinctrl = NULL;
+#endif
 	channels = devm_kcalloc(&pdev->dev, meson->chip.npwm, sizeof(*channels),
 				GFP_KERNEL);
 	if (!channels)

@@ -931,6 +931,7 @@ extern unsigned int hdmitx_rd_check_reg(unsigned int addr,
 	unsigned int mask);
 extern void vsem_init_cfg(struct hdmitx_dev *hdev);
 void update_current_para(struct hdmitx_dev *hdev);
+extern struct hdmi_cea_timing *get_custom_timing(void);
 
 enum hdmi_tf_type hdmitx_get_cur_hdr_st(void);
 enum hdmi_tf_type hdmitx_get_cur_dv_st(void);

@@ -6937,6 +6937,13 @@ static int __init hdmitx_get_phy_idx(char *str)
 
 __setup("phy_idx=", hdmitx_get_phy_idx);
 
+static struct hdmi_cea_timing custom_timing;
+struct hdmi_cea_timing *get_custom_timing(void)
+{
+	return &custom_timing;
+}
+EXPORT_SYMBOL(get_custom_timing);
+
 MODULE_PARM_DESC(log_level, "\n log_level\n");
 module_param(log_level, int, 0644);
 

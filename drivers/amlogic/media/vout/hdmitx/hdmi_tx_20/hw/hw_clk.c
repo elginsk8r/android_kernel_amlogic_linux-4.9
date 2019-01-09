@@ -891,6 +891,10 @@ static struct hw_enc_clk_val_group setting_enc_clk_val_24[] = {
 	  HDMI_3840x2160p50_16x9_Y420,
 	  HDMI_VIC_END},
 		5940000, 2, 1, 1, VID_PLL_DIV_5, 1, 2, 1, -1},
+	{{HDMI_CUSTOMBUILT,
+	  HDMI_VIC_END},
+		/* default 1080p60hz */
+		5405400, 4, 1, 2, VID_PLL_DIV_5, 1, 1, 1, -1},
 	{{HDMI_VIC_FAKE,
 	  HDMI_VIC_END},
 		3450000, 1, 2, 2, VID_PLL_DIV_5, 1, 1, 1, -1},
@@ -1129,6 +1133,7 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev)
 	enum hdmi_vic vic = hdev->cur_VIC;
 	enum hdmi_color_space cs = hdev->para->cs;
 	enum hdmi_color_depth cd = hdev->para->cd;
+	struct hdmi_cea_timing *custom_timing;
 
 	/* YUV 422 always use 24B mode */
 	if (cs == COLORSPACE_YUV422)
@@ -1199,6 +1204,31 @@ static void hdmitx_set_clk_(struct hdmitx_dev *hdev)
 		return;
 	}
 next:
+	/* FIXME : consider pixel clocks over 200MHz */
+	if (vic == HDMI_CUSTOMBUILT) {
+		custom_timing = get_custom_timing();
+		p_enc[j].hpll_clk_out = (custom_timing->frac_freq * 10);
+		pr_info("[N2][%s] vic == HDMI_CUSTOMBUILT, frac_freq %d\n",
+				__func__, custom_timing->frac_freq);
+		/* check if hpll clk output is under (140*10)MHz */
+		if (p_enc[j].hpll_clk_out < 1400000) {
+			p_enc[j].hpll_clk_out *= 4;
+			/* control od dividers */
+			p_enc[j].od1 = 4;
+			p_enc[j].od2 = 1;
+			p_enc[j].od3 = 2;
+		} else {
+			/* control od dividers */
+			p_enc[j].od1 = 1;
+			p_enc[j].od2 = 1;
+			p_enc[j].od3 = 2;
+		}
+
+		pr_info("[N2] hpll_clk_out %d, od1 %d, od2 %d, od3 %d\n",
+			p_enc[j].hpll_clk_out,
+			p_enc[j].od1, p_enc[j].od2, p_enc[j].od3);
+	}
+
 	hdmitx_set_cts_sys_clk(hdev);
 	set_hpll_clk_out(p_enc[j].hpll_clk_out);
 	if ((cd == COLORDEPTH_24B) && (hdev->sspll))

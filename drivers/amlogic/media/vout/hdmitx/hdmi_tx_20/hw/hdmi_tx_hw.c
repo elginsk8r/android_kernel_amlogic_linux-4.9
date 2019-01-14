@@ -2094,6 +2094,14 @@ do { \
 		else
 			set_phy_by_mode(1);
 		break;
+	/* consider HPLL over 2Gbps */
+	case HDMI_2560x1600p60_8x5:
+	case HDMI_2560x1440p60_16x9:
+		if (hdev->para->cd == COLORDEPTH_24B)
+			set_phy_by_mode(2);
+		else
+			set_phy_by_mode(1);
+		break;
 	case HDMI_1080p60:
 	case HDMI_1080p50:
 		if (hdev->flag_3dfp)

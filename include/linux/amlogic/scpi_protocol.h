@@ -29,6 +29,9 @@ enum scpi_client_id {
 	SCPI_CL_REMOTE,
 	SCPI_CL_LED_TIMER,
 	SCPI_CL_SET_CEC_DATA,
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	SCPI_CL_WOL,
+#endif
 	SCPI_MAX,
 };
 

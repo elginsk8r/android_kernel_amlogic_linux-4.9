@@ -209,7 +209,8 @@ struct cec_msg_last {
 #define CEC_FUNC_CFG_OTP_ON			0x02
 #define CEC_FUNC_CFG_AUTO_STANDBY	0x04
 #define CEC_FUNC_CFG_AUTO_POWER_ON	0x08
-#define CEC_FUNC_CFG_ALL			0x2f
+#define CEC_FUNC_CFG_STREAMPATH_POWER_ON	0x10
+#define CEC_FUNC_CFG_ALL			0x3f
 #define CEC_FUNC_CFG_NONE			0x0
 
 #define PREG_PAD_GPIO3_I			(0x01b << 2)

@@ -909,6 +909,11 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 	if (!dev)
 		return -ENODEV;
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	if (!dev)
+		goto err;
+#endif
+
 	if (b_requestType == (USB_DIR_OUT | USB_TYPE_VENDOR)) {
 		if (b_request == ACCESSORY_START) {
 			dev->start_requested = 1;

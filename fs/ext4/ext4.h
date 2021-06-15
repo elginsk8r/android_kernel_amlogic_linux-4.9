@@ -2284,7 +2284,7 @@ ext4_fsblk_t ext4_inode_to_goal_block(struct inode *);
 
 static inline bool ext4_encrypted_inode(struct inode *inode)
 {
-	return ext4_test_inode_flag(inode, EXT4_INODE_ENCRYPT);
+        return ext4_test_inode_flag(inode, EXT4_INODE_ENCRYPT);
 }
 
 #ifdef CONFIG_FS_ENCRYPTION

@@ -96,8 +96,16 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0  0x8000000>;
-			alignment = <0x0  0x400000>;
+			size = <0x0 0x4C00000>;
+			alignment = <0x0 0x400000>;
+		};
+
+		ion_fb_reserved:linux,ion-fb {
+			compatible = "amlogic, ion-fb-mem";
+			reusable;
+			/* 1920x1080x4x6 round up 4M align */
+			size = <0x0 0x3400000>;
+			alignment = <0x0 0x400000>;
 		};
 
 		/*  vdin0 CMA pool */

@@ -88,10 +88,16 @@
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0 0x8000000>;
+			size = <0x0 0x4C00000>;
 			alignment = <0x0 0x400000>;
 		};
-
+		ion_fb_reserved:linux,ion-fb {
+			compatible = "amlogic, ion-fb-mem";
+			reusable;
+			/* 1920x1080x4x6 round up 4M align */
+			size = <0x0 0x3400000>;
+			alignment = <0x0 0x400000>;
+		};
 		//di_reserved:linux,di {
 			//compatible = "amlogic, di-mem";
 			/* buffer_size = 3621952(yuv422 8bit) */
@@ -143,7 +149,7 @@
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1920x1080x2x4  =16 M */
-			size = <0x0 0x04000000>;
+			size = <0x0 0x02000000>;
 			alignment = <0x0 0x400000>;
 		};
 		galcore_reserved:linux,galcore {
@@ -171,7 +177,7 @@
 
 	cma_shrinker {
 		compatible = "amlogic, cma-shrinker";
-		status = "okay";
+		status = "disabled";
 		adj  = <0 100 200 250 900 950>;
 		free = <8192 12288 16384 24576 28672 32768>;
 	};
